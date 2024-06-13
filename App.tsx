@@ -60,7 +60,7 @@ export default function App() {
         </View>
         <View style={styles.managePhotoContainer}>
           <TouchableOpacity
-            onPress={async () => await handleCameraPress(false)}
+            onPress={async () => await handleCameraPress(true)}
           >
             <Icon name="camera-outline" size={36} color="navy" />
           </TouchableOpacity>
