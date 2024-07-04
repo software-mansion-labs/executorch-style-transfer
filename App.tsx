@@ -36,7 +36,8 @@ export default function App() {
   useEffect(() => {
     const initModule = async () => {
       try {
-        await StyleTransferModule.initModules();
+        const result = await StyleTransferModule.initModules();
+        console.log(result);
       } catch (err) {
         console.error(err);
       }
@@ -59,9 +60,7 @@ export default function App() {
           )}
         </View>
         <View style={styles.managePhotoContainer}>
-          <TouchableOpacity
-            onPress={async () => await handleCameraPress(true)}
-          >
+          <TouchableOpacity onPress={async () => await handleCameraPress(true)}>
             <Icon name="camera-outline" size={36} color="navy" />
           </TouchableOpacity>
           <TouchableOpacity
@@ -79,7 +78,7 @@ export default function App() {
                   key={index}
                   style={[styles.stylePickerTouchableOpacity]}
                   onPress={async () => {
-                    if (style === currentStyle) return;
+                    if (style === currentStyle || !imageUri) return;
                     setCurrentStyle(style);
                     const outputUri = await applyStyle(imageUri, style);
                     setStyleImageUri(outputUri);
@@ -134,6 +133,7 @@ const styles = StyleSheet.create({
     width: "100%",
     borderTopColor: "navy",
     borderTopWidth: 4,
+    paddingBottom: "3%",
     alignItems: "center",
     justifyContent: "center",
   },
