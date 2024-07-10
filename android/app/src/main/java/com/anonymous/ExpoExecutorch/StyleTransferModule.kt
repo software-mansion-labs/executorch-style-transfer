@@ -3,7 +3,6 @@ package com.anonymous.ExpoExecutorch
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
-import android.util.Log
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
@@ -27,13 +26,10 @@ class StyleTransferModule(reactContext: ReactApplicationContext) : ReactContextB
     fun initModules(promise: Promise) {
         try {
             modelResourceIds.forEach { (modelName, resourceId) ->
-                Log.d("StyleTransferModule", "Loading model: $modelName")
                 modules[modelName] = loadModuleFromRawResource(resourceId)
-                Log.d("StyleTransferModule", "$modelName model loaded")
             }
             promise.resolve("All models loaded successfully")
         } catch (e: Exception) {
-            Log.e("StyleTransferModule", "Error loading models", e)
             promise.reject("Cannot load all models", e)
         }
     }
@@ -41,26 +37,27 @@ class StyleTransferModule(reactContext: ReactApplicationContext) : ReactContextB
     @ReactMethod
     fun applyStyleTransfer(styleName: String, imageUri: String, promise: Promise) {
         try {
-            Log.i("StyleTransferModule", "applyStyleTransfer called with imageUri: $imageUri")
+            // load an image (bitmap) from URI
             val uri = Uri.parse(imageUri)
             val bitmapInputStream = reactApplicationContext.contentResolver.openInputStream(uri)!!
             val rawBitmap = BitmapFactory.decodeStream(bitmapInputStream)
             bitmapInputStream.close()
 
+            // rotate if needed, resize and  make it a tensor
             val rotatedBitmap = BitmapUtils.handleBitmapOrientation(uri, reactApplicationContext.contentResolver, rawBitmap)
             val inputBitmap = Bitmap.createScaledBitmap(
                 rotatedBitmap,
                 640, 640, true
             )
             val inputTensor = TensorUtils.bitmapToFloat32Tensor(inputBitmap)
-            val t1 = System.currentTimeMillis()
+
+            // run the model
             val outputTensor = modules[styleName]!!.forward(EValue.from(inputTensor))[0].toTensor()
-            val t2 = System.currentTimeMillis()
+
+            // convert the output back to a bitmap and save the result
             val outputBitmap = TensorUtils.float32TensorToBitmap(outputTensor)
             val outputUri = BitmapUtils.saveToTempFile(outputBitmap, styleName)
 
-            val inferenceTime = t2 - t1
-            Log.i("StyleTransferModule", "applyStyleTransfer inference time: $inferenceTime ms, returns imageUri$outputUri, ")
             promise.resolve(outputUri.toString())
         } catch (e: Exception) {
             promise.reject("Error", e)
